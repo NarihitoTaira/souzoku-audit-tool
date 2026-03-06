@@ -1,0 +1,7 @@
+# 相続税AI品質監査ツール
+
+node_modules/
+.next/
+.env.local
+*.tsbuildinfo
+next-env.d.ts
