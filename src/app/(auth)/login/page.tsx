@@ -118,6 +118,17 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
+
+      {/* Legal Links */}
+      <div className="flex justify-center gap-4 mt-4">
+        <Link href="/terms" className="text-[11px] text-muted-foreground hover:text-foreground transition-smooth">
+          利用規約
+        </Link>
+        <span className="text-[11px] text-muted-foreground">·</span>
+        <Link href="/privacy" className="text-[11px] text-muted-foreground hover:text-foreground transition-smooth">
+          プライバシーポリシー
+        </Link>
+      </div>
     </div>
   );
 }

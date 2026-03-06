@@ -195,6 +195,14 @@ export default function SignupPage() {
         </button>
 
         <p className="text-center text-xs text-muted-foreground">
+          アカウントを作成することで、
+          <Link href="/terms" className="text-primary hover:underline">利用規約</Link>
+          および
+          <Link href="/privacy" className="text-primary hover:underline">プライバシーポリシー</Link>
+          に同意したものとみなされます。
+        </p>
+
+        <p className="text-center text-xs text-muted-foreground">
           既にアカウントをお持ちの方は{" "}
           <Link
             href="/login"
