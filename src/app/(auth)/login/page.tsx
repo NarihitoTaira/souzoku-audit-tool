@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Award, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -43,9 +43,9 @@ export default function LoginPage() {
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/30 mb-4">
-          <ShieldCheck className="h-7 w-7 text-white" />
+          <Award className="h-7 w-7 text-white" />
         </div>
-        <h1 className="text-xl font-bold gradient-text">相続税AI品質監査ツール</h1>
+        <h1 className="text-xl font-bold gradient-text">補助金採択可能性診断ツール</h1>
         <p className="text-sm text-muted-foreground mt-1">アカウントにログイン</p>
       </div>
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@tax-office.jp"
+              placeholder="example@company.co.jp"
               required
               className="w-full h-11 rounded-lg bg-secondary/50 border border-border/50 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-smooth"
             />

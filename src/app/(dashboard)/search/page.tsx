@@ -1,41 +1,59 @@
 "use client";
 
-import { Search, FileSearch, ArrowRight } from "lucide-react";
+import { Search, FileSearch, ArrowRight, Award } from "lucide-react";
 import { useState } from "react";
-import { RiskBadge } from "@/components/audit/risk-badge";
 
 const mockSearchResults = [
   {
     id: "S-001",
-    title: "渋谷区 神南エリアの土地評価事例",
+    title: "製造業DX推進 — 生産管理システム刷新（事業再構築補助金）",
     matchScore: 0.94,
     summary:
-      "渋谷区神南の角地評価において、側方路線影響加算の適用を含む路線価評価の事例。3名の相続人による遺産分割を完了。",
+      "金属加工業がIoTセンサーとクラウド型生産管理システムを導入し、リードタイムを40%短縮。TAM/SAM/SOM分析と競合比較表が高評価。付加価値額は年率5.2%増加を達成。",
     date: "2025-09-15",
-    totalAssets: "¥210,000,000",
-    risks: { high: 0, medium: 1, low: 2 },
+    subsidyName: "事業再構築補助金",
+    adoptionScore: 82,
+    rank: "A",
+    subsidyAmount: "¥15,000,000",
   },
   {
     id: "S-002",
-    title: "港区 赤坂の事業用宅地特例適用事例",
+    title: "地域特産品のEC販路開拓（小規模事業者持続化補助金）",
     matchScore: 0.87,
     summary:
-      "事業用小規模宅地等の特例を適用し、400㎡の面積要件内で80%減額を実施した事例。事業承継の要件を充足。",
+      "地方の食品製造業者がECサイト構築とSNSマーケティングにより県外売上比率を15%→45%に拡大。顧客アンケートに基づくペルソナ設定が採択の決め手。",
     date: "2025-07-22",
-    totalAssets: "¥380,000,000",
-    risks: { high: 1, medium: 0, low: 1 },
+    subsidyName: "小規模事業者持続化補助金",
+    adoptionScore: 78,
+    rank: "B",
+    subsidyAmount: "¥500,000",
   },
   {
     id: "S-003",
-    title: "世田谷区 住宅地の配偶者控除適用事例",
+    title: "AIを活用した品質検査自動化（ものづくり補助金）",
     matchScore: 0.82,
     summary:
-      "配偶者税額軽減を最大限活用した申告事例。二次相続を考慮した最適な遺産分割案を策定。",
+      "プラスチック成形メーカーがAI画像認識による外観検査システムを開発。不良品検出率95%→99.8%に向上、検査工程の人員3名削減。特許出願計画が革新性で高評価。",
     date: "2025-11-08",
-    totalAssets: "¥145,000,000",
-    risks: { high: 0, medium: 0, low: 3 },
+    subsidyName: "ものづくり補助金",
+    adoptionScore: 85,
+    rank: "A",
+    subsidyAmount: "¥10,000,000",
   },
 ];
+
+const rankColor = (rank: string) => {
+  switch (rank) {
+    case "A":
+      return "bg-emerald-500/10 text-emerald-400";
+    case "B":
+      return "bg-blue-500/10 text-blue-400";
+    case "C":
+      return "bg-amber-500/10 text-amber-400";
+    default:
+      return "bg-secondary/50 text-muted-foreground";
+  }
+};
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -48,9 +66,9 @@ export default function SearchPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">類似事例検索</h1>
+        <h1 className="text-2xl font-bold gradient-text">採択事例検索</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          過去の申告書データからAIが類似事例を検索します（ベクトル検索）
+          過去の採択事例からAIが類似ケースを検索し、成功パターンを参照できます
         </p>
       </div>
 
@@ -64,7 +82,7 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="例: 渋谷区 角地 路線価 小規模宅地..."
+              placeholder="例: 製造業 DX 生産性向上 IT導入..."
               className="w-full h-12 rounded-lg bg-secondary/50 border border-border/50 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-smooth"
             />
           </div>
@@ -76,7 +94,7 @@ export default function SearchPage() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          キーワード、地域名、財産種別、特例名などで過去の類似事例を検索できます
+          業種、補助金名、技術キーワードなどで過去の採択成功事例を検索できます
         </p>
       </div>
 
@@ -84,7 +102,7 @@ export default function SearchPage() {
       {hasSearched && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            {mockSearchResults.length}件の類似事例が見つかりました
+            {mockSearchResults.length}件の採択事例が見つかりました
           </p>
           {mockSearchResults.map((result) => (
             <div
@@ -93,7 +111,7 @@ export default function SearchPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <h3 className="text-sm font-semibold group-hover:text-primary transition-smooth">
                       {result.title}
                     </h3>
@@ -104,23 +122,24 @@ export default function SearchPage() {
                   <p className="text-xs text-muted-foreground mt-2">
                     {result.summary}
                   </p>
-                  <div className="flex items-center gap-4 mt-3">
+                  <div className="flex items-center gap-4 mt-3 flex-wrap">
                     <span className="text-[11px] text-muted-foreground">
                       {result.date}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {result.totalAssets}
+                      {result.subsidyName}
                     </span>
-                    <div className="flex gap-1">
-                      {result.risks.high > 0 && (
-                        <RiskBadge level="high" count={result.risks.high} />
-                      )}
-                      {result.risks.medium > 0 && (
-                        <RiskBadge level="medium" count={result.risks.medium} />
-                      )}
-                      {result.risks.low > 0 && (
-                        <RiskBadge level="low" count={result.risks.low} />
-                      )}
+                    <span className="text-[11px] text-muted-foreground">
+                      補助金額: {result.subsidyAmount}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Award className="h-3 w-3 text-primary" />
+                      <span className="text-[11px] font-bold text-foreground">
+                        {result.adoptionScore}点
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rankColor(result.rank)}`}>
+                        {result.rank}ランク
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -135,7 +154,7 @@ export default function SearchPage() {
         <div className="glass rounded-xl p-12 text-center">
           <FileSearch className="h-12 w-12 text-muted-foreground/30 mx-auto" />
           <p className="text-muted-foreground mt-4">
-            キーワードを入力して類似事例を検索してください
+            キーワードを入力して採択事例を検索してください
           </p>
         </div>
       )}

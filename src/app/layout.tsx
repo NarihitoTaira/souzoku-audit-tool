@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "相続税AI品質監査ツール",
+  title: "補助金採択可能性診断ツール",
   description:
-    "相続税申告に特化したAI品質監査・ナレッジツール。過去の申告書と税法マスタを照合し、ミスやリスクを自動検知します。",
+    "中小企業向けAI補助金診断ツール。事業計画書と公募要項を照合し、採択可能性をスコアリング。改善施策を提案します。",
 };
 
 export default function RootLayout({
@@ -13,9 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja" className="dark">
+    <html lang="ja" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

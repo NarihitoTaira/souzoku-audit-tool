@@ -1,122 +1,97 @@
 /**
- * 相続税AI品質監査ツール - AIクライアント
+ * 補助金採択可能性診断ツール - AIクライアント（BYOK対応）
  *
- * Google Gemini 1.5 Flash（デフォルト・無料枠あり）/ OpenAI API の統合クライアント
- * APIキー未設定時はモックレスポンスを返すフォールバック設計
+ * APIキーの優先順位: ユーザーBYOKキー → プラットフォームキー → モック
  */
 
 import { SYSTEM_PROMPT } from "./prompts";
 
-export interface AuditFinding {
-  category: "valuation_error" | "missing_document" | "special_provision_risk";
+export interface DiagnosisFinding {
+  category: "weak_point" | "missing_element" | "structure_issue";
   severity: "high" | "medium" | "low";
   title: string;
   description: string;
   suggestion: string;
+  expected_score_impact: string;
   reference: string;
 }
 
-export interface AuditResponse {
-  findings: AuditFinding[];
+export interface DiagnosisScores {
+  innovation_score: number;
+  feasibility_score: number;
+  market_score: number;
+  profitability_score: number;
+  policy_alignment_score: number;
+  total_score: number;
+  adoption_probability: string;
+}
+
+export interface DiagnosisResponse {
+  findings: DiagnosisFinding[];
+  scores: DiagnosisScores;
   summary: {
     total_findings: number;
     high_count: number;
     medium_count: number;
     low_count: number;
-    quality_score: number;
+    overall_assessment: string;
   };
 }
 
-// モック監査レスポンス（API未設定時のフォールバック）
-const MOCK_AUDIT_RESPONSE: AuditResponse = {
+// モック診断レスポンス（APIキー未設定時のフォールバック）
+const MOCK_DIAGNOSIS_RESPONSE: DiagnosisResponse = {
   findings: [
     {
-      category: "valuation_error",
+      category: "weak_point",
       severity: "high",
-      title: "土地評価額の路線価適用誤り",
-      description:
-        "角地の土地について側方路線影響加算率が適用されていません。財産評価基本通達第16条に基づく補正が必要です。",
-      suggestion:
-        "側方路線影響加算率を適用し、評価額を再計算してください。",
-      reference: "財産評価基本通達第16条",
+      title: "市場分析の定量的根拠が不足",
+      description: "ターゲット市場の規模について具体的なデータ（TAM/SAM/SOM）や公的統計の引用がありません。",
+      suggestion: "経済産業省「工業統計」や矢野経済研究所等の市場調査レポートを引用し、市場規模を数値化してください。",
+      expected_score_impact: "+10〜15点",
+      reference: "審査項目3：市場分析・顧客ニーズ",
     },
     {
-      category: "missing_document",
+      category: "missing_element",
       severity: "high",
-      title: "遺産分割協議書の添付漏れ",
-      description:
-        "法定相続分以外での分割が行われていますが、遺産分割協議書が添付されていません。",
-      suggestion:
-        "全相続人の署名・実印による遺産分割協議書を添付してください。",
-      reference: "相続税法第27条",
+      title: "補助事業終了後の自走計画が未記載",
+      description: "補助金交付期間終了後の事業継続計画が記載されていません。不採択リスクが非常に高くなります。",
+      suggestion: "補助事業終了後3〜5年の売上・利益計画と、補助金なしでの事業継続方法を明記してください。",
+      expected_score_impact: "+10〜12点",
+      reference: "審査項目4：収益計画・費用対効果",
     },
     {
-      category: "special_provision_risk",
+      category: "structure_issue",
       severity: "medium",
-      title: "小規模宅地等特例の面積超過",
-      description:
-        "対象地の面積が330㎡を超えており、超過分は通常評価が必要です。",
-      suggestion: "330㎡を超過する部分について通常評価額を適用してください。",
-      reference: "租税特別措置法第69条の4",
+      title: "実施体制の具体性が不足",
+      description: "各フェーズの担当者・外部連携先・専門人材の確保計画が不明確です。",
+      suggestion: "実施体制図を作成し、社内担当者の役割と外部パートナーとの連携体制を具体的に記載してください。",
+      expected_score_impact: "+5〜8点",
+      reference: "審査項目2：事業の実現可能性",
     },
   ],
+  scores: {
+    innovation_score: 12,
+    feasibility_score: 13,
+    market_score: 8,
+    profitability_score: 10,
+    policy_alignment_score: 11,
+    total_score: 54,
+    adoption_probability: "C",
+  },
   summary: {
     total_findings: 3,
     high_count: 2,
     medium_count: 1,
     low_count: 0,
-    quality_score: 72,
+    overall_assessment:
+      "現状の事業計画書は採択可能性Cランク（54/100点）です。市場分析の定量根拠と自走計画の欠如が致命的な弱点です。改善により75〜85点への引き上げが見込めます。",
   },
 };
 
 /**
- * AI プロバイダーの判定
+ * Gemini API呼び出し（カスタムキー対応）
  */
-function getProvider(): "openai" | "gemini" | "mock" {
-  const provider = process.env.AI_PROVIDER || "gemini";
-  // Gemini を優先的にチェック（無料枠あり）
-  if (provider === "gemini" && process.env.GOOGLE_AI_API_KEY) return "gemini";
-  if (provider === "openai" && process.env.OPENAI_API_KEY) return "openai";
-  // プロバイダー未指定でもAPIキーがあれば自動検出
-  if (process.env.GOOGLE_AI_API_KEY) return "gemini";
-  if (process.env.OPENAI_API_KEY) return "openai";
-  return "mock";
-}
-
-/**
- * OpenAI API呼び出し
- */
-async function callOpenAI(prompt: string): Promise<string> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
-
-/**
- * Gemini API呼び出し
- */
-async function callGemini(prompt: string): Promise<string> {
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
+async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -125,9 +100,7 @@ async function callGemini(prompt: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [
-          {
-            parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }],
-          },
+          { parts: [{ text: `${SYSTEM_PROMPT}\n\n${prompt}` }] },
         ],
         generationConfig: {
           temperature: 0.2,
@@ -138,7 +111,8 @@ async function callGemini(prompt: string): Promise<string> {
   );
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
+    const errorBody = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
   }
 
   const data = await response.json();
@@ -146,29 +120,59 @@ async function callGemini(prompt: string): Promise<string> {
 }
 
 /**
- * AI監査を実行
+ * 補助金採択可能性診断を実行（BYOK対応）
+ * @param prompt - 診断プロンプト
+ * @param apiKey - 使用するAPIキー（BYOKまたはプラットフォーム）
  */
-export async function runAudit(prompt: string): Promise<AuditResponse> {
-  const provider = getProvider();
+export async function runDiagnosis(
+  prompt: string,
+  apiKey?: string
+): Promise<DiagnosisResponse> {
+  const key = apiKey || process.env.GOOGLE_AI_API_KEY;
 
-  if (provider === "mock") {
-    // シミュレーション用に少し遅延を入れる
+  if (!key) {
+    console.warn("No API key available, returning mock response");
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    return MOCK_AUDIT_RESPONSE;
+    return MOCK_DIAGNOSIS_RESPONSE;
   }
 
   try {
-    let responseText: string;
-    if (provider === "openai") {
-      responseText = await callOpenAI(prompt);
-    } else {
-      responseText = await callGemini(prompt);
+    const responseText = await callGemini(prompt, key);
+    return JSON.parse(responseText) as DiagnosisResponse;
+  } catch (error) {
+    console.error("AI diagnosis error, falling back to mock:", error);
+    return MOCK_DIAGNOSIS_RESPONSE;
+  }
+}
+
+/**
+ * APIキーの接続テスト
+ */
+export async function testApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "こんにちは。接続テストです。「OK」とだけ返してください。" }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 10 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      if (response.status === 400) return { valid: false, error: "APIキーの形式が無効です" };
+      if (response.status === 403) return { valid: false, error: "APIキーが無効またはアクセス権限がありません" };
+      return { valid: false, error: `API error: ${response.status}` };
     }
 
-    return JSON.parse(responseText) as AuditResponse;
+    return { valid: true };
   } catch (error) {
-    console.error("AI audit error, falling back to mock:", error);
-    return MOCK_AUDIT_RESPONSE;
+    return { valid: false, error: "接続に失敗しました。ネットワークを確認してください。" };
   }
 }
 
@@ -177,7 +181,6 @@ export async function runAudit(prompt: string): Promise<AuditResponse> {
  */
 export async function getEmbedding(text: string): Promise<number[]> {
   if (!process.env.OPENAI_API_KEY) {
-    // モック: 1536次元のランダムベクトル
     return Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
   }
 
@@ -187,36 +190,10 @@ export async function getEmbedding(text: string): Promise<number[]> {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-    }),
+    body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Embedding API error: ${response.status}`);
-  }
-
+  if (!response.ok) throw new Error(`Embedding API error: ${response.status}`);
   const data = await response.json();
   return data.data[0].embedding;
-}
-
-/**
- * AIチャット（汎用）
- */
-export async function chat(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<string> {
-  const provider = getProvider();
-
-  if (provider === "mock") {
-    return "（モックレスポンス）AIの分析結果がここに表示されます。APIキーを設定してください。";
-  }
-
-  if (provider === "openai") {
-    return callOpenAI(`${systemPrompt}\n\n${userPrompt}`);
-  } else {
-    return callGemini(`${systemPrompt}\n\n${userPrompt}`);
-  }
 }

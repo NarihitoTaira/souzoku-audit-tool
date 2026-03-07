@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-base font-semibold mb-2">1. はじめに</h2>
           <p className="text-muted-foreground">
-            本プライバシーポリシーは、「相続税AI品質監査ツール」（以下「本サービス」）における
+            本プライバシーポリシーは、「補助金採択可能性診断ツール」（以下「本サービス」）における
             個人情報の取り扱いについて定めたものです。
             本サービスは、個人情報の保護に関する法律（個人情報保護法）その他の関連法令を遵守し、
             利用者の個人情報を適切に管理します。
@@ -33,16 +33,17 @@ export default function PrivacyPage() {
           <ul className="list-disc list-inside text-muted-foreground space-y-1">
             <li>メールアドレス</li>
             <li>パスワード（ハッシュ化して保存）</li>
-            <li>表示名（税理士名）</li>
+            <li>表示名（コンサルタント名）</li>
           </ul>
 
           <h3 className="text-sm font-medium mt-3 mb-1">
             2-2. アップロードされた書類データ
           </h3>
           <ul className="list-disc list-inside text-muted-foreground space-y-1">
-            <li>相続税申告書（PDF/Excel）</li>
+            <li>事業計画書（PDF/Word/Excel）</li>
+            <li>補助金公募要項（PDF）</li>
             <li>
-              上記に含まれる被相続人・相続人の氏名、住所、財産情報、評価額等
+              上記に含まれる企業名、事業内容、売上計画、投資計画等の経営情報
             </li>
           </ul>
 
@@ -50,7 +51,7 @@ export default function PrivacyPage() {
             2-3. 利用状況データ
           </h3>
           <ul className="list-disc list-inside text-muted-foreground space-y-1">
-            <li>監査実行履歴</li>
+            <li>診断実行履歴</li>
             <li>検索クエリ</li>
           </ul>
         </section>
@@ -62,8 +63,8 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc list-inside text-muted-foreground space-y-1">
             <li>本サービスの提供・運営・改善</li>
-            <li>AI監査機能の実行（書類データのテキスト解析）</li>
-            <li>類似事例の検索・照合</li>
+            <li>AI診断機能の実行（事業計画書のテキスト解析・採択可能性スコアリング）</li>
+            <li>類似採択事例の検索・照合</li>
             <li>ユーザー認証およびアカウント管理</li>
             <li>サービスに関する重要なお知らせの連絡</li>
           </ul>
@@ -75,7 +76,7 @@ export default function PrivacyPage() {
           </h2>
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
             <p className="text-muted-foreground">
-              本サービスでは、AI監査機能の実行にあたり、アップロードされた書類の
+              本サービスでは、AI診断機能の実行にあたり、アップロードされた書類の
               <strong>テキストデータ</strong>を以下の外部サービスに送信します。
             </p>
             <table className="w-full mt-3 text-xs">
@@ -90,7 +91,7 @@ export default function PrivacyPage() {
                 <tr className="border-b border-border/20">
                   <td className="py-2">Gemini API</td>
                   <td className="py-2">Google LLC</td>
-                  <td className="py-2">AI監査の実行</td>
+                  <td className="py-2">AI診断の実行</td>
                 </tr>
                 <tr className="border-b border-border/20">
                   <td className="py-2">Supabase</td>

@@ -1,176 +1,270 @@
 "use client";
 
-import { AuditResultCard, type AuditResult } from "@/components/audit/audit-result-card";
-import { RiskBadge } from "@/components/audit/risk-badge";
-import { useState } from "react";
-import { Filter, ShieldCheck } from "lucide-react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import {
+  FileText,
+  TrendingUp,
+  AlertTriangle,
+  Lightbulb,
+  Upload,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
+import Link from "next/link";
 
-const mockAuditResults: AuditResult[] = [
-  {
-    id: "R-001",
-    category: "valuation_error",
-    level: "high",
-    title: "土地評価額の路線価適用誤り",
-    description:
-      "対象地（渋谷区神南1丁目）の路線価について、正面路線価のみ適用されていますが、角地のため側方路線影響加算率の適用が必要です。現在の評価額 ¥85,000,000 は過少評価の可能性があります。",
-    suggestion:
-      "角地補正率（0.03）を側方路線価に乗じて加算してください。修正後の推定評価額は約 ¥87,550,000 となります。国税庁の路線価図で側方路線価を確認し、財産評価基本通達16条に基づき再計算を推奨します。",
-    reference: "財産評価基本通達第16条（側方路線影響加算）",
-  },
-  {
-    id: "R-002",
-    category: "missing_document",
-    level: "high",
-    title: "遺産分割協議書の添付漏れ",
-    description:
-      "小規模宅地等の特例（措法69条の4）を適用していますが、法定相続分とは異なる分割を前提としているため、遺産分割協議書の添付が必須です。現在のアップロード書類に含まれていません。",
-    suggestion:
-      "遺産分割協議書（全相続人の署名・実印押印済み）を添付してください。印鑑証明書（発行後3ヶ月以内）も併せて必要です。",
-    reference: "相続税法第27条、同施行規則第16条",
-  },
-  {
-    id: "R-003",
-    category: "special_provision_risk",
-    level: "medium",
-    title: "小規模宅地等特例の面積要件確認",
-    description:
-      "特定居住用宅地等として330㎡まで80%減額を適用していますが、対象地の面積が345㎡と記載されており、超過部分15㎡は通常評価が必要です。",
-    suggestion:
-      "330㎡を超過する15㎡については通常評価額を適用してください。減額後の評価額を再計算し、超過分は通常評価として ¥2,250,000 を加算してください。",
-    reference: "租税特別措置法第69条の4、同施行令第40条の2",
-  },
-  {
-    id: "R-004",
-    category: "valuation_error",
-    level: "medium",
-    title: "上場株式の評価方法の確認",
-    description:
-      "上場株式（トヨタ自動車株式会社 1,000株）について、課税時期の最終価格のみで評価されています。最終価格、月平均、前月平均、前々月平均の4つのうち最も低い価額を採用する必要があります。",
-    suggestion:
-      "課税時期の月を含む3か月間の月平均値を確認し、最も低い価額で評価し直してください。",
-    reference: "財産評価基本通達第169条（上場株式の評価）",
-  },
-  {
-    id: "R-005",
-    category: "missing_document",
-    level: "low",
-    title: "預貯金の残高証明書の日付確認",
-    description:
-      "みずほ銀行の残高証明書の発行日が相続開始日の翌月になっています。相続開始日時点の残高を証明する必要があります。",
-    suggestion:
-      "銀行に相続開始日（死亡日）時点の残高証明書を再発行依頼してください。経過利息の計算も確認してください。",
-    reference: "財産評価基本通達第203条（預貯金の評価）",
-  },
-  {
-    id: "R-006",
-    category: "special_provision_risk",
-    level: "low",
-    title: "配偶者税額軽減の適用確認",
-    description:
-      "配偶者税額軽減を適用する場合、法定相続分または1億6千万円のいずれか大きい金額まで非課税となります。計算根拠が明記されていません。",
-    suggestion:
-      "配偶者の法定相続分と1億6千万円を比較し、適用額の計算過程を申告書の付表に明記してください。",
-    reference: "相続税法第19条の2（配偶者に対する税額軽減）",
-  },
+interface DiagnosisData {
+  id: string;
+  subsidy_name: string;
+  total_score: number;
+  adoption_rank: string;
+  scores: {
+    innovation_score: number;
+    feasibility_score: number;
+    market_score: number;
+    profitability_score: number;
+    policy_alignment_score: number;
+  };
+  findings: Array<{
+    category: string;
+    severity: string;
+    title: string;
+    description: string;
+    suggestion: string;
+    expected_score_impact: string;
+    reference: string;
+  }>;
+  summary: {
+    overall_assessment: string;
+  };
+  api_key_source: string;
+  created_at: string;
+}
+
+const rankColor = (rank: string) => {
+  switch (rank) {
+    case "A": return "text-emerald-500";
+    case "B": return "text-blue-500";
+    case "C": return "text-amber-500";
+    case "D": return "text-red-500";
+    default: return "text-muted-foreground";
+  }
+};
+
+const severityColor = (s: string) => {
+  switch (s) {
+    case "high": return "bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/20";
+    case "medium": return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+    case "low": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+    default: return "bg-secondary/50 text-muted-foreground border-border/50";
+  }
+};
+
+const severityLabel = (s: string) => {
+  switch (s) {
+    case "high": return "高リスク";
+    case "medium": return "中リスク";
+    case "low": return "低リスク";
+    default: return s;
+  }
+};
+
+const scoreAxes = [
+  { key: "innovation_score", label: "革新性" },
+  { key: "feasibility_score", label: "実現可能性" },
+  { key: "market_score", label: "市場分析" },
+  { key: "profitability_score", label: "収益計画" },
+  { key: "policy_alignment_score", label: "政策適合性" },
 ];
 
-export default function AuditPage() {
-  const [filter, setFilter] = useState<"all" | "high" | "medium" | "low">(
-    "all"
-  );
+function AuditContent() {
+  const searchParams = useSearchParams();
+  const diagnosisId = searchParams.get("id");
+  const [diagnosis, setDiagnosis] = useState<DiagnosisData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
-  const filtered =
-    filter === "all"
-      ? mockAuditResults
-      : mockAuditResults.filter((r) => r.level === filter);
+  useEffect(() => {
+    async function fetchDiagnosis() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
 
-  const counts = {
-    high: mockAuditResults.filter((r) => r.level === "high").length,
-    medium: mockAuditResults.filter((r) => r.level === "medium").length,
-    low: mockAuditResults.filter((r) => r.level === "low").length,
+        let query = supabase
+          .from("subsidy_diagnoses")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (diagnosisId) {
+          query = query.eq("id", diagnosisId);
+        } else {
+          query = query.order("created_at", { ascending: false }).limit(1);
+        }
+
+        const { data } = await query.single();
+        setDiagnosis(data);
+      } catch {
+        // no data
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDiagnosis();
+  }, [diagnosisId]);
+
+  const toggleCard = (i: number) => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!diagnosis) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center animate-in">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+          <FileText className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-lg font-bold mb-2">まだ診断結果がありません</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          事業計画書をアップロードして、採択可能性を診断しましょう
+        </p>
+        <Link
+          href="/upload"
+          className="flex items-center gap-2 px-6 py-3 rounded-lg gradient-primary text-white text-sm font-medium hover:opacity-90 transition-smooth"
+        >
+          <Upload className="h-4 w-4" />
+          事業計画書をアップロード
+        </Link>
+      </div>
+    );
+  }
+
+  const scores = diagnosis.scores || {};
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold gradient-text">AI監査結果</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            AIが検知したリスクと修正案の一覧です
-          </p>
+    <div className="space-y-6 animate-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold gradient-text">採択シミュレーション結果</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {diagnosis.subsidy_name} · {new Date(diagnosis.created_at).toLocaleDateString("ja-JP")}
+        </p>
+      </div>
+
+      {/* Score Banner */}
+      <div className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-xs text-muted-foreground">総合スコア</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-4xl font-bold">{diagnosis.total_score}</span>
+              <span className="text-lg text-muted-foreground">/100</span>
+              <span className={`text-2xl font-bold ml-2 ${rankColor(diagnosis.adoption_rank)}`}>
+                {diagnosis.adoption_rank}ランク
+              </span>
+            </div>
+          </div>
+          <TrendingUp className={`h-10 w-10 ${rankColor(diagnosis.adoption_rank)}`} />
         </div>
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">
-            {mockAuditResults.length}件検知
-          </span>
+
+        {/* 5 Axis Scores */}
+        <div className="space-y-2">
+          {scoreAxes.map((axis) => {
+            const score = (scores as Record<string, number>)[axis.key] || 0;
+            return (
+              <div key={axis.key} className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-20">{axis.label}</span>
+                <div className="flex-1 h-2 rounded-full bg-secondary/50 overflow-hidden">
+                  <div
+                    className="h-full rounded-full gradient-primary transition-all duration-700"
+                    style={{ width: `${(score / 20) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold w-10 text-right">{score}/20</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Summary Banner */}
-      <div className="glass rounded-xl p-5 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-red-400">{counts.high}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              重要度: 高
-            </p>
-          </div>
-          <div className="h-8 w-px bg-border/50" />
-          <div className="text-center">
-            <p className="text-2xl font-bold text-amber-400">{counts.medium}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              重要度: 中
-            </p>
-          </div>
-          <div className="h-8 w-px bg-border/50" />
-          <div className="text-center">
-            <p className="text-2xl font-bold text-emerald-400">{counts.low}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              重要度: 低
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <div className="flex gap-1">
-            {(["all", "high", "medium", "low"] as const).map((level) => (
-              <button
-                key={level}
-                onClick={() => setFilter(level)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-smooth ${
-                  filter === level
-                    ? "gradient-primary text-white"
-                    : "text-muted-foreground hover:bg-secondary/50"
-                }`}
-              >
-                {level === "all"
-                  ? "すべて"
-                  : level === "high"
-                  ? "高"
-                  : level === "medium"
-                  ? "中"
-                  : "低"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Results List */}
-      <div className="space-y-3">
-        {filtered.map((result) => (
-          <AuditResultCard key={result.id} result={result} />
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="glass rounded-xl p-12 text-center">
-          <p className="text-muted-foreground">
-            該当するリスクはありません
+      {/* Overall Assessment */}
+      {diagnosis.summary?.overall_assessment && (
+        <div className="glass rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-400" />
+            総合評価
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {diagnosis.summary.overall_assessment}
           </p>
         </div>
       )}
+
+      {/* Findings */}
+      {diagnosis.findings && diagnosis.findings.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            指摘事項 ({diagnosis.findings.length}件)
+          </h3>
+          {diagnosis.findings.map((finding, i) => (
+            <div key={i} className={`glass rounded-xl overflow-hidden border ${severityColor(finding.severity)}`}>
+              <button
+                onClick={() => toggleCard(i)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-secondary/10 transition-smooth"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(finding.severity)}`}>
+                    {severityLabel(finding.severity)}
+                  </span>
+                  <span className="text-sm font-medium">{finding.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-primary font-medium">{finding.expected_score_impact}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${expandedCards.has(i) ? "rotate-180" : ""}`} />
+                </div>
+              </button>
+              {expandedCards.has(i) && (
+                <div className="px-4 pb-4 space-y-3 border-t border-border/30 pt-3 animate-in">
+                  <div>
+                    <p className="text-xs font-semibold text-red-500 dark:text-red-400 mb-1">指摘内容</p>
+                    <p className="text-sm text-muted-foreground">{finding.description}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 mb-1">💡 AI改善提案</p>
+                    <p className="text-sm text-muted-foreground">{finding.suggestion}</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">📋 {finding.reference}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function AuditPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    }>
+      <AuditContent />
+    </Suspense>
   );
 }

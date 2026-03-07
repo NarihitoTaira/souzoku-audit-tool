@@ -12,7 +12,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold mb-2">第1条（適用）</h2>
           <p className="text-muted-foreground">
-            本規約は、本サービス「相続税AI品質監査ツール」（以下「本サービス」）の利用に関する条件を、
+            本規約は、本サービス「補助金採択可能性診断ツール」（以下「本サービス」）の利用に関する条件を、
             本サービスを利用するすべてのユーザー（以下「利用者」）と運営者との間で定めるものです。
             利用者は、本サービスを利用することにより、本規約に同意したものとみなされます。
           </p>
@@ -21,35 +21,35 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold mb-2">第2条（サービスの内容）</h2>
           <p className="text-muted-foreground">
-            本サービスは、相続税申告書類のAIによる品質監査を補助するツールです。
+            本サービスは、中小企業向けの補助金採択可能性をAIが診断するツールです。
             以下の機能を提供します。
           </p>
           <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
-            <li>PDF・Excelファイルのアップロードおよびテキスト解析</li>
-            <li>AIによる評価額の計算ミス、添付書類の漏れ、特例適用リスクの検知</li>
-            <li>税法マスタ・過去事例との照合（類似事例検索）</li>
-            <li>税務ナレッジ（チェックポイント集）の閲覧</li>
+            <li>事業計画書（PDF/Word/Excel）のアップロードおよびテキスト解析</li>
+            <li>AIによる採択可能性のスコアリング・改善指摘・加点施策の提案</li>
+            <li>過去の採択事例との照合（類似事例検索）</li>
+            <li>補助金ナレッジ（審査基準・申請のコツ）の閲覧</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-base font-semibold mb-2">第3条（AI監査結果の位置づけ・免責）</h2>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-amber-200">
+          <h2 className="text-base font-semibold mb-2">第3条（AI診断結果の位置づけ・免責）</h2>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-amber-800 dark:text-amber-200">
             <p className="font-medium mb-2">⚠️ 重要</p>
             <ul className="space-y-2 text-sm">
               <li>
-                本サービスが提供するAI監査結果は、あくまで<strong>参考情報</strong>であり、
-                税務申告に関する最終的な判断は利用者（税理士）ご自身の責任で行ってください。
+                本サービスが提供するAI診断結果は、あくまで<strong>参考情報</strong>であり、
+                補助金申請に関する最終的な判断は利用者ご自身の責任で行ってください。
               </li>
               <li>
-                運営者は、AI監査結果の正確性、完全性、有用性について<strong>いかなる保証も行いません</strong>。
+                運営者は、AI診断結果の正確性、完全性、有用性について<strong>いかなる保証も行いません</strong>。
               </li>
               <li>
-                本サービスの利用により生じた損害（過少申告加算税、延滞税、その他の損害を含む）について、
+                本サービスの利用により生じた損害（不採択、申請費用、その他の損害を含む）について、
                 運営者は<strong>一切の責任を負いません</strong>。
               </li>
               <li>
-                AIモデル（Google Gemini等）は税法の専門家ではなく、
+                AIモデル（Google Gemini等）は補助金審査の専門家ではなく、
                 誤った情報を生成する可能性があります。
               </li>
             </ul>

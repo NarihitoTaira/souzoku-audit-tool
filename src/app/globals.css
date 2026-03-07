@@ -5,7 +5,49 @@
 @tailwind utilities;
 
 @layer base {
+  /* ライトモード（デフォルト） */
   :root {
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 243 75% 59%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
+    --ring: 243 75% 59%;
+    --radius: 0.75rem;
+
+    /* Glass ライトモード用 */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --glass-hover-bg: rgba(255, 255, 255, 0.9);
+    --glass-hover-border: rgba(0, 0, 0, 0.1);
+
+    /* Gradient text */
+    --grad-text-start: hsl(243 75% 50%);
+    --grad-text-mid: hsl(280 75% 45%);
+    --grad-text-end: hsl(200 85% 45%);
+
+    /* Scrollbar */
+    --scrollbar-track: hsl(220 20% 97%);
+    --scrollbar-thumb: hsl(220 13% 82%);
+    --scrollbar-thumb-hover: hsl(220 13% 72%);
+  }
+
+  /* ダークモード */
+  .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 96%;
     --card: 222 47% 8%;
@@ -25,7 +67,23 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 243 75% 59%;
-    --radius: 0.75rem;
+
+    /* Glass ダークモード用 */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: none;
+    --glass-hover-bg: rgba(255, 255, 255, 0.06);
+    --glass-hover-border: rgba(255, 255, 255, 0.1);
+
+    /* Gradient text */
+    --grad-text-start: hsl(243 75% 70%);
+    --grad-text-mid: hsl(280 75% 65%);
+    --grad-text-end: hsl(200 85% 65%);
+
+    /* Scrollbar */
+    --scrollbar-track: hsl(222 47% 6%);
+    --scrollbar-thumb: hsl(217 33% 20%);
+    --scrollbar-thumb-hover: hsl(217 33% 30%);
   }
 }
 
@@ -41,14 +99,15 @@
 
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
   }
 
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--glass-hover-bg);
+    border-color: var(--glass-hover-border);
   }
 
   .gradient-primary {
@@ -56,7 +115,7 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, hsl(243 75% 70%) 0%, hsl(280 75% 65%) 50%, hsl(200 85% 65%) 100%);
+    background: linear-gradient(135deg, var(--grad-text-start) 0%, var(--grad-text-mid) 50%, var(--grad-text-end) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -90,19 +149,25 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(222 47% 6%);
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(217 33% 20%);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(217 33% 30%);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Smooth transitions */
 .transition-smooth {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fade animation */
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }

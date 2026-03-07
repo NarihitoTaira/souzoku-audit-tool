@@ -1,33 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { Upload, ShieldCheck, BookOpen, FileSearch } from "lucide-react";
+import { Upload, ClipboardCheck, BookOpen, FileSearch } from "lucide-react";
 
 const actions = [
   {
-    label: "書類をアップロード",
-    description: "PDF/Excelファイルを解析",
+    label: "事業計画書をアップロード",
+    description: "PDF/Word/Excelを解析",
     icon: Upload,
     href: "/upload",
     gradient: "from-blue-500 to-cyan-400",
   },
   {
-    label: "AI監査を実行",
-    description: "AIによる品質チェック",
-    icon: ShieldCheck,
+    label: "補助金診断を実行",
+    description: "AIによる採択シミュレーション",
+    icon: ClipboardCheck,
     href: "/audit",
     gradient: "from-violet-500 to-purple-400",
   },
   {
-    label: "税務ナレッジを確認",
-    description: "通達・税法のチェック項目",
+    label: "補助金ナレッジを確認",
+    description: "審査基準・申請のコツ",
     icon: BookOpen,
     href: "/knowledge",
     gradient: "from-emerald-500 to-green-400",
   },
   {
-    label: "類似事例を検索",
-    description: "過去の申告書と照合",
+    label: "採択事例を検索",
+    description: "過去の成功事例を参照",
     icon: FileSearch,
     href: "/search",
     gradient: "from-amber-500 to-orange-400",

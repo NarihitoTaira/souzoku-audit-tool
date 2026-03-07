@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ShieldCheck,
+  Award,
   Mail,
   Lock,
   User,
@@ -92,11 +92,11 @@ export default function SignupPage() {
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/30 mb-4">
-          <ShieldCheck className="h-7 w-7 text-white" />
+          <Award className="h-7 w-7 text-white" />
         </div>
         <h1 className="text-xl font-bold gradient-text">新規アカウント登録</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          AI品質監査ツールのご利用を開始
+          補助金採択可能性診断ツールのご利用を開始
         </p>
       </div>
 
@@ -111,7 +111,7 @@ export default function SignupPage() {
 
         <div>
           <label className="text-xs text-muted-foreground block mb-1.5">
-            お名前（税理士名）
+            お名前（コンサルタント名）
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -136,7 +136,7 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@tax-office.jp"
+              placeholder="example@company.co.jp"
               required
               className="w-full h-11 rounded-lg bg-secondary/50 border border-border/50 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-smooth"
             />

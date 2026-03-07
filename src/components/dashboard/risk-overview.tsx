@@ -1,50 +1,111 @@
 "use client";
 
-const riskData = [
-  { label: "評価額計算ミス", count: 3, level: "high" as const },
-  { label: "添付書類の漏れ", count: 2, level: "medium" as const },
-  { label: "特例適用リスク", count: 1, level: "high" as const },
-  { label: "期限超過の懸念", count: 1, level: "medium" as const },
-  { label: "軽微な記載事項", count: 4, level: "low" as const },
-];
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 
-const levelConfig = {
-  high: { bar: "bg-red-500", text: "text-red-400" },
-  medium: { bar: "bg-amber-500", text: "text-amber-400" },
-  low: { bar: "bg-emerald-500", text: "text-emerald-400" },
-};
+interface RiskCategory {
+  label: string;
+  count: number;
+  color: string;
+}
 
 export function RiskOverview() {
-  const maxCount = Math.max(...riskData.map((d) => d.count));
+  const [categories, setCategories] = useState<RiskCategory[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchFindings() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+
+        const { data: diagnoses } = await supabase
+          .from("subsidy_diagnoses")
+          .select("findings")
+          .eq("user_id", user.id);
+
+        if (!diagnoses || diagnoses.length === 0) {
+          setCategories([
+            { label: "革新性・差別化の不足", count: 0, color: "bg-red-500" },
+            { label: "市場分析の根拠不足", count: 0, color: "bg-amber-500" },
+            { label: "実現可能性の課題", count: 0, color: "bg-orange-500" },
+            { label: "収益計画の不備", count: 0, color: "bg-yellow-500" },
+            { label: "政策適合性の記載不足", count: 0, color: "bg-blue-500" },
+          ]);
+          setLoading(false);
+          return;
+        }
+
+        // 全findingsからreference別に集計
+        const refCounts: Record<string, number> = {};
+        let totalCount = 0;
+        for (const d of diagnoses) {
+          if (Array.isArray(d.findings)) {
+            for (const f of d.findings) {
+              const ref = f.reference || "その他";
+              refCounts[ref] = (refCounts[ref] || 0) + 1;
+              totalCount++;
+            }
+          }
+        }
+
+        const defaultCategories = [
+          { label: "革新性・差別化の不足", key: "審査項目1", color: "bg-red-500" },
+          { label: "実現可能性の課題", key: "審査項目2", color: "bg-orange-500" },
+          { label: "市場分析の根拠不足", key: "審査項目3", color: "bg-amber-500" },
+          { label: "収益計画の不備", key: "審査項目4", color: "bg-yellow-500" },
+          { label: "政策適合性の記載不足", key: "審査項目5", color: "bg-blue-500" },
+        ];
+
+        setCategories(
+          defaultCategories.map((c) => ({
+            ...c,
+            count: Object.entries(refCounts)
+              .filter(([k]) => k.includes(c.key))
+              .reduce((sum, [, v]) => sum + v, 0),
+          }))
+        );
+        setTotal(totalCount);
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFindings();
+  }, []);
 
   return (
     <div className="glass rounded-xl p-5">
-      <h2 className="text-base font-semibold">リスク分布</h2>
-      <p className="text-xs text-muted-foreground mt-0.5">
-        カテゴリ別のリスク検知数
+      <h2 className="text-base font-semibold mb-1">指摘分布</h2>
+      <p className="text-xs text-muted-foreground mb-4">
+        審査項目別の指摘件数
       </p>
-      <div className="mt-4 space-y-3">
-        {riskData.map((item) => (
-          <div key={item.label}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-muted-foreground">
-                {item.label}
-              </span>
-              <span
-                className={`text-xs font-bold ${levelConfig[item.level].text}`}
-              >
-                {item.count}
-              </span>
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {categories.map((cat) => (
+            <div key={cat.label} className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{cat.label}</span>
+                <span className="font-medium">{cat.count}件</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${cat.color} transition-all duration-500`}
+                  style={{ width: total > 0 ? `${(cat.count / total) * 100}%` : "0%" }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-              <div
-                className={`h-full rounded-full ${levelConfig[item.level].bar} transition-all duration-700`}
-                style={{ width: `${(item.count / maxCount) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

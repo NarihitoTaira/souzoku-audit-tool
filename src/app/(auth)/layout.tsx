@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "ログイン | 相続税AI品質監査ツール",
-  description: "相続税AI品質監査ツールにログインします",
+  title: "ログイン | 補助金採択可能性診断ツール",
+  description: "補助金採択可能性診断ツールにログインします",
 };
 
 export default function AuthLayout({
