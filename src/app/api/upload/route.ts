@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Vercelサーバーレスで Node.js ランタイムを強制
+export const runtime = "nodejs";
+export const maxDuration = 30; // 最大30秒
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -8,6 +12,31 @@ const ALLOWED_TYPES = [
   "text/csv",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
+
+/**
+ * PDFからテキストを抽出（pdf-parseのVercel互換ラッパー）
+ */
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  // pdf-parse は内部で test/data ディレクトリを参照するため
+  // 直接 pdf.js を使用してVercelでの互換性を確保
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require("pdf-parse/lib/pdf-parse.js");
+    const data = await pdfParse(buffer);
+    return data.text || "";
+  } catch (e) {
+    // フォールバック: 通常のインポート
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require("pdf-parse");
+      const data = await pdfParse(buffer);
+      return data.text || "";
+    } catch (e2) {
+      console.error("PDF parse error:", e, e2);
+      throw new Error("PDFの解析に失敗しました");
+    }
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,10 +69,7 @@ export async function POST(request: NextRequest) {
     let extractedText = "";
 
     if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require("pdf-parse");
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
+      extractedText = await extractPdfText(buffer);
     } else if (
       file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       file.name.endsWith(".docx")
@@ -82,7 +108,7 @@ export async function POST(request: NextRequest) {
           file_name: file.name,
           file_type: file.type || (file.name.endsWith(".pdf") ? "application/pdf" : "unknown"),
           file_size: file.size,
-          extracted_text: extractedText.substring(0, 100000), // 最大10万文字
+          extracted_text: extractedText.substring(0, 100000),
           category,
         });
       }
@@ -98,9 +124,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json(
-      { error: "ファイルの処理中にエラーが発生しました" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "ファイルの処理中にエラーが発生しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
