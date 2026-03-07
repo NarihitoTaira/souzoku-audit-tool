@@ -92,7 +92,9 @@ export default function UploadPage() {
                 status: res.ok ? "complete" : "error",
                 textPreview: data.textPreview,
                 textLength: data.textLength,
-                errorMessage: data.error,
+                errorMessage: data.error
+                  ? `${data.error}${data.debugInfo ? ` [${data.debugInfo.parseMethod || ""} / ${data.debugInfo.errorType || ""}]` : ""}`
+                  : undefined,
               }
             : f
         )
